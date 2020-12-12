@@ -263,5 +263,5 @@ __pycache__/
 Deploy
 titanagent.db
 cred.json
-appsettings.*.*
-!appsettings.Staging.*
+appsettings.*.json
+!appsettings.Docker.json
