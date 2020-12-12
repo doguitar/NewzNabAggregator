@@ -3,6 +3,7 @@
     <AssemblyName>NewzNabAggregator.Common</AssemblyName>
     <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
     <TargetFramework>netcoreapp5.0</TargetFramework>
+    <Configurations>Debug;Release;Docker</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <LangVersion>Preview</LangVersion>

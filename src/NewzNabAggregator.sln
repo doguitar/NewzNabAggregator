@@ -11,6 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NewzNabAggregator.Common", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0AC47E9B-0931-41BF-9C21-5331E1D3FF67}"
 	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
 		.editorconfig = .editorconfig
 		..\.gitignore = ..\.gitignore
 		Dockerfile = Dockerfile
@@ -19,19 +20,26 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Docker|Any CPU = Docker|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{D9DDF3BE-82DB-4A98-8A3C-3D4D564495E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D9DDF3BE-82DB-4A98-8A3C-3D4D564495E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9DDF3BE-82DB-4A98-8A3C-3D4D564495E7}.Docker|Any CPU.ActiveCfg = Docker|Any CPU
+		{D9DDF3BE-82DB-4A98-8A3C-3D4D564495E7}.Docker|Any CPU.Build.0 = Docker|Any CPU
 		{D9DDF3BE-82DB-4A98-8A3C-3D4D564495E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D9DDF3BE-82DB-4A98-8A3C-3D4D564495E7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C95F28CC-C4C7-44BD-A9D6-5C439D274842}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C95F28CC-C4C7-44BD-A9D6-5C439D274842}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C95F28CC-C4C7-44BD-A9D6-5C439D274842}.Docker|Any CPU.ActiveCfg = Docker|Any CPU
+		{C95F28CC-C4C7-44BD-A9D6-5C439D274842}.Docker|Any CPU.Build.0 = Docker|Any CPU
 		{C95F28CC-C4C7-44BD-A9D6-5C439D274842}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C95F28CC-C4C7-44BD-A9D6-5C439D274842}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8AABF090-C4F0-47F9-95E5-59DF4C3D6C5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8AABF090-C4F0-47F9-95E5-59DF4C3D6C5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8AABF090-C4F0-47F9-95E5-59DF4C3D6C5B}.Docker|Any CPU.ActiveCfg = Docker|Any CPU
+		{8AABF090-C4F0-47F9-95E5-59DF4C3D6C5B}.Docker|Any CPU.Build.0 = Docker|Any CPU
 		{8AABF090-C4F0-47F9-95E5-59DF4C3D6C5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8AABF090-C4F0-47F9-95E5-59DF4C3D6C5B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
