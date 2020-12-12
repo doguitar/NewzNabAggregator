@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30517.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NewzNabAggregator.Web", "NewzNabAggregator.Web\NewzNabAggregator.Web.csproj", "{D9DDF3BE-82DB-4A98-8A3C-3D4D564495E7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NewzNabAggregator.Database", "NewzNabAggregator.Database\NewzNabAggregator.Database.csproj", "{C95F28CC-C4C7-44BD-A9D6-5C439D274842}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NewzNabAggregator.Common", "NewzNabAggregator.Common\NewzNabAggregator.Common.csproj", "{8AABF090-C4F0-47F9-95E5-59DF4C3D6C5B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0AC47E9B-0931-41BF-9C21-5331E1D3FF67}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		Dockerfile = Dockerfile
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D9DDF3BE-82DB-4A98-8A3C-3D4D564495E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9DDF3BE-82DB-4A98-8A3C-3D4D564495E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9DDF3BE-82DB-4A98-8A3C-3D4D564495E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9DDF3BE-82DB-4A98-8A3C-3D4D564495E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C95F28CC-C4C7-44BD-A9D6-5C439D274842}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C95F28CC-C4C7-44BD-A9D6-5C439D274842}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C95F28CC-C4C7-44BD-A9D6-5C439D274842}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C95F28CC-C4C7-44BD-A9D6-5C439D274842}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8AABF090-C4F0-47F9-95E5-59DF4C3D6C5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8AABF090-C4F0-47F9-95E5-59DF4C3D6C5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8AABF090-C4F0-47F9-95E5-59DF4C3D6C5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8AABF090-C4F0-47F9-95E5-59DF4C3D6C5B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B079B3EA-96E4-46A6-908E-2F8C35992153}
+	EndGlobalSection
+EndGlobal

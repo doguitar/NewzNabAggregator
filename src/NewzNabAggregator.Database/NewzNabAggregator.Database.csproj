@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>NewzNabAggregator.Database</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>netcoreapp5.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>Preview</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemGroup>
+    <PackageReference Include="LiteDB" Version="5.0.9" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NewzNabAggregator.Common\NewzNabAggregator.Common.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="LiteDB">
+      <HintPath>..\net5.0\LiteDB.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
