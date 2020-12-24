@@ -125,9 +125,9 @@ namespace NewzNabAggregator.Web.Controllers
             });
         }
 
-        private async Task<List<HttpResponseMessage>> QueryAllClients(string path, Dictionary<string, string> queryString, string client = null)
+        private async Task<List<Tuple<ClientInfo, HttpResponseMessage>>> QueryAllClients(string path, Dictionary<string, string> queryString, string client = null)
         {
-            var responses = new ConcurrentBag<HttpResponseMessage>();
+            var responses = new ConcurrentBag<Tuple<ClientInfo, HttpResponseMessage>>();
             await Task.WhenAll(_clients.Where((ClientInfo c) => client == null || c.Name == client).Select((Func<ClientInfo, Task>)async delegate (ClientInfo clientInfo)
             {
                 var qs = new Dictionary<string, string>(queryString);
@@ -140,7 +140,7 @@ namespace NewzNabAggregator.Web.Controllers
                 {
                     var start = DateTime.Now;
                     var response = await clientInfo.Client.GetAsync(path);
-                    responses.Add(response);
+                    responses.Add(new (clientInfo, response));
                     Console.WriteLine($"{RequestId} Indexer {clientInfo.Client.BaseAddress} responded in {(DateTime.Now - start).TotalSeconds} seconds");
                 }
                 catch (Exception e)
@@ -165,7 +165,7 @@ namespace NewzNabAggregator.Web.Controllers
         {
             Console.WriteLine($"{RequestId} Request {base.Request.Path}?{base.Request.QueryString}");
             var requestUri = new Uri($"{base.Request.Scheme}://{base.Request.Host}/{base.Request.PathBase}");
-            var results = new List<string>();
+            var results = new List<Tuple<ClientInfo, string>>();
             if (base.Request.QueryString.HasValue)
             {
                 var path = base.Request.Path.Value!.Replace("/api", string.Empty);
@@ -188,12 +188,11 @@ namespace NewzNabAggregator.Web.Controllers
                 queryString["o"] = option.ToString().ToLowerInvariant();
                 foreach (var response in await QueryAllClients(path, queryString, client))
                 {
-                    if (response.IsSuccessStatusCode)
+                    if (response.Item2.IsSuccessStatusCode)
                     {
-                        var list = results;
-                        list.Add(await response.Content.ReadAsStringAsync());
+                        results.Add(new (response.Item1, await response.Item2.Content.ReadAsStringAsync()));
                     }
-                    base.HttpContext.Response.RegisterForDispose(response);
+                    base.HttpContext.Response.RegisterForDispose(response.Item2);
                 }
                 switch (option)
                 {
@@ -211,38 +210,45 @@ namespace NewzNabAggregator.Web.Controllers
                             var returnXml = new XDocument(new XElement((XName?)"rss", channel));
                             foreach (var result in results)
                             {
-                                var xml = XElement.Parse(result);
-                                var subchannel = xml.Element((XName?)"channel");
-                                var subresponse = subchannel.Element(newznab + "response");
-                                var subtotal = subresponse.Attribute((XName?)"total")?.Value;
-                                if (!string.IsNullOrEmpty(subtotal) && ulong.TryParse(subtotal, out var ulongSubtotal) && ulongSubtotal > total)
+                                try
                                 {
-                                    total = ulongSubtotal;
-                                }
-                                foreach (var item in xml.Element((XName?)"channel")!.Elements("item"))
-                                {
-                                    var enclosure = item.Element((XName?)"enclosure");
-                                    var link = item.Element((XName?)"link");
-                                    var lengthString = enclosure.Attribute((XName?)"length")?.Value;
-                                    var url2 = enclosure.Attribute((XName?)"url")?.Value;
-                                    var type = enclosure.Attribute((XName?)"type")?.Value;
-                                    var title = item.Element((XName?)"title")?.Value;
-                                    var pubDate = item.Element((XName?)"pubDate")?.Value;
-                                    if (!string.IsNullOrWhiteSpace(url2) && !string.IsNullOrWhiteSpace(type) && !string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(pubDate) && !string.IsNullOrWhiteSpace(lengthString) && long.TryParse(lengthString, out var length))
+                                    var xml = XElement.Parse(result.Item2);
+                                    var subchannel = xml.Element((XName?)"channel");
+                                    var subresponse = subchannel.Element(newznab + "response");
+                                    var subtotal = subresponse.Attribute((XName?)"total")?.Value;
+                                    if (!string.IsNullOrEmpty(subtotal) && ulong.TryParse(subtotal, out var ulongSubtotal) && ulongSubtotal > total)
                                     {
-                                        var nzb = new Nzb
-                                        {
-                                            length = length,
-                                            link = url2,
-                                            pubDate = pubDate,
-                                            type = type,
-                                            title = title
-                                        };
-                                        nzb = _db.Synchronize((NewzNabAggregator.Database.Database db) => db.SaveNzb(nzb));
-                                        url2 = (link.Value = new Uri(requestUri, $"/nzb/{nzb.id}").ToString());
-                                        enclosure.Attribute((XName?)"url")!.Value = url2;
-                                        channel.Add(item);
+                                        total = ulongSubtotal;
                                     }
+                                    foreach (var item in xml.Element((XName?)"channel")!.Elements("item"))
+                                    {
+                                        var enclosure = item.Element((XName?)"enclosure");
+                                        var link = item.Element((XName?)"link");
+                                        var lengthString = enclosure.Attribute((XName?)"length")?.Value;
+                                        var url2 = enclosure.Attribute((XName?)"url")?.Value;
+                                        var type = enclosure.Attribute((XName?)"type")?.Value;
+                                        var title = item.Element((XName?)"title")?.Value;
+                                        var pubDate = item.Element((XName?)"pubDate")?.Value;
+                                        if (!string.IsNullOrWhiteSpace(url2) && !string.IsNullOrWhiteSpace(type) && !string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(pubDate) && !string.IsNullOrWhiteSpace(lengthString) && long.TryParse(lengthString, out var length))
+                                        {
+                                            var nzb = new Nzb
+                                            {
+                                                length = length,
+                                                link = url2,
+                                                pubDate = pubDate,
+                                                type = type,
+                                                title = title
+                                            };
+                                            nzb = _db.Synchronize((NewzNabAggregator.Database.Database db) => db.SaveNzb(nzb));
+                                            url2 = (link.Value = new Uri(requestUri, $"/nzb/{nzb.id}").ToString());
+                                            enclosure.Attribute((XName?)"url")!.Value = url2;
+                                            channel.Add(item);
+                                        }
+                                    }
+                                }
+                                catch (Exception)
+                                {
+                                    Console.WriteLine($"Failed to parse results at '{result.Item1.Name}': {Environment.NewLine}{result.Item2}");
                                 }
                             }
                             response2.Add(new XAttribute((XName?)"offset", offset), new XAttribute((XName?)"total", total));
@@ -320,11 +326,11 @@ namespace NewzNabAggregator.Web.Controllers
                 option = Option.JSON;
             }
             queryString["o"] = option.ToString().ToLowerInvariant();
-            var responses = (await QueryAllClients(path, queryString)).Where(r => r.IsSuccessStatusCode);
+            var responses = (await QueryAllClients(path, queryString)).Where(r => r.Item2.IsSuccessStatusCode);
             var allcaps = new List<XElement>();
             foreach (var r in responses)
             {
-                allcaps.Add(XElement.Parse(await r.Content.ReadAsStringAsync()));
+                allcaps.Add(XElement.Parse(await r.Item2.Content.ReadAsStringAsync()));
             }
 
             var server = new XElement((XName?)"server", new XAttribute((XName?)"title", "NzbAggregator"), new XAttribute((XName?)"url", requestUri.ToString()));
