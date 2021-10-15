@@ -260,7 +260,7 @@ namespace NewzNabAggregator.Web.Controllers
                                                 type = type,
                                                 title = title
                                             };
-                                            nzb = _db.Synchronize((NewzNabAggregator.Database.Database db) => db.SaveNzb(nzb));
+                                            nzb = _db.Synchronize((db) => db.SaveNzb(nzb));
                                             url2 = (link.Value = new Uri(requestUri, $"/nzb/{nzb.id}").ToString());
                                             enclosure.Attribute((XName?)"url")!.Value = url2;
                                             channel.Add(item);
@@ -296,19 +296,14 @@ namespace NewzNabAggregator.Web.Controllers
         [Route("nzb/{id}")]
         public async Task<IActionResult> Nzb(string id)
         {
-            if (!Authenticate())
-            {
-                return new UnauthorizedResult();
-            }
+            //if (!Authenticate())
+            //{
+            //    return new UnauthorizedResult();
+            //}
 
             if (Guid.TryParse(id, out var guid))
             {
-                Nzb nzb = null;
-                await _db.SynchronizeAsync(delegate (NewzNabAggregator.Database.Database db)
-                {
-                    nzb = db.GetNzb(guid);
-                    return Task.CompletedTask;
-                });
+                var nzb = _db.Synchronize(db => db.GetNzb(guid));
                 if (nzb != null)
                 {
                     using var client = new HttpClient();
