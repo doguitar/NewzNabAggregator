@@ -38,12 +38,21 @@ namespace NewzNabAggregator.Web
                                      token = s.GetValue<string>("token"),
                                      name = s.GetValue<string>("name")
                                  };
-            services.AddSingleton(newznabDetails.Select(d => new NewzNabInfo
-            {
-                Uri = new Uri(d.url),
-                Token = d.token,
-                Name = d.name
-            }).ToArray()).AddSingleton(newznabDetails.Select(d => new NewzNab(new Uri(d.url), d.token)).ToArray()).AddSingleton(new Synchronizer<NewzNabAggregator.Database.Database>(new NewzNabAggregator.Database.Database(dbPath)))
+            var tokenDetails = from s in Configuration.GetSection("tokens").GetChildren()
+                               select new
+                               {
+                                   token = s.GetValue<string>("token")
+                               };
+
+            services
+                .AddSingleton(newznabDetails.Select(d => new NewzNabInfo
+                {
+                    Uri = new Uri(d.url),
+                    Token = d.token,
+                    Name = d.name
+                }).ToArray())
+                .AddSingleton(tokenDetails.Select(t => new TokenInfo { Token = t.token }).ToDictionary(t => t.Token, t => t))
+                .AddSingleton(newznabDetails.Select(d => new NewzNab(new Uri(d.url), d.token)).ToArray()).AddSingleton(new Synchronizer<NewzNabAggregator.Database.Database>(new NewzNabAggregator.Database.Database(dbPath)))
                 .AddSwaggerGen(delegate (SwaggerGenOptions c)
                 {
                     c.SwaggerDoc("NewzNabAggregator", new OpenApiInfo

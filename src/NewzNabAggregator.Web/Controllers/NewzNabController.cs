@@ -95,6 +95,7 @@ namespace NewzNabAggregator.Web.Controllers
         private readonly Synchronizer<NewzNabAggregator.Database.Database> _db;
 
         private readonly ClientInfo[] _clients;
+        private readonly Dictionary<string, TokenInfo> _tokens;
 
         private Guid RequestId
         {
@@ -102,7 +103,7 @@ namespace NewzNabAggregator.Web.Controllers
         } = Guid.NewGuid();
 
 
-        public NewzNabController(Synchronizer<NewzNabAggregator.Database.Database> db, NewzNabInfo[] newzNabs)
+        public NewzNabController(Synchronizer<NewzNabAggregator.Database.Database> db, NewzNabInfo[] newzNabs, Dictionary<string, TokenInfo> tokens)
         {
             _db = db;
             _clients = newzNabs.Select((NewzNabInfo i) => new ClientInfo
@@ -115,6 +116,7 @@ namespace NewzNabAggregator.Web.Controllers
                 Token = i.Token,
                 Name = i.Name
             }).ToArray();
+            _tokens = tokens;
         }
 
         ~NewzNabController()
@@ -123,6 +125,20 @@ namespace NewzNabAggregator.Web.Controllers
             {
                 c.Client.Dispose();
             });
+        }
+
+        private bool Authenticate(string token = null)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                if (Request.QueryString.HasValue)
+                {
+                    var queryString = (from p in base.Request.QueryString.Value!.Remove(0, 1).Split("&")
+                                       select p.Split("=")).ToDictionary((string[] p) => p.First(), (string[] p) => p.Last());
+                    queryString.TryGetValue("token", out token);
+                }
+            }
+            return token != null && _tokens.ContainsKey(token.Trim());
         }
 
         private async Task<List<Tuple<ClientInfo, HttpResponseMessage>>> QueryAllClients(string path, Dictionary<string, string> queryString, string client = null)
@@ -140,7 +156,7 @@ namespace NewzNabAggregator.Web.Controllers
                 {
                     var start = DateTime.Now;
                     var response = await clientInfo.Client.GetAsync(path);
-                    responses.Add(new (clientInfo, response));
+                    responses.Add(new(clientInfo, response));
                     Console.WriteLine($"{RequestId} Indexer {clientInfo.Client.BaseAddress} responded in {(DateTime.Now - start).TotalSeconds} seconds");
                 }
                 catch (Exception e)
@@ -171,7 +187,12 @@ namespace NewzNabAggregator.Web.Controllers
                 var path = base.Request.Path.Value!.Replace("/api", string.Empty);
                 var queryString = (from p in base.Request.QueryString.Value!.Remove(0, 1).Split("&")
                                    select p.Split("=")).ToDictionary((string[] p) => p.First(), (string[] p) => p.Last());
-                queryString.TryGetValue("apikey", out var _);
+
+                if (!(queryString.TryGetValue("apikey", out var token) && Authenticate(token)))
+                {
+                    return new UnauthorizedResult();
+                }
+
                 if (!queryString.TryGetValue("t", out var t))
                 {
                     return new BadRequestResult();
@@ -190,7 +211,7 @@ namespace NewzNabAggregator.Web.Controllers
                 {
                     if (response.Item2.IsSuccessStatusCode)
                     {
-                        results.Add(new (response.Item1, await response.Item2.Content.ReadAsStringAsync()));
+                        results.Add(new(response.Item1, await response.Item2.Content.ReadAsStringAsync()));
                     }
                     base.HttpContext.Response.RegisterForDispose(response.Item2);
                 }
@@ -275,6 +296,11 @@ namespace NewzNabAggregator.Web.Controllers
         [Route("nzb/{id}")]
         public async Task<IActionResult> Nzb(string id)
         {
+            if (!Authenticate())
+            {
+                return new UnauthorizedResult();
+            }
+
             if (Guid.TryParse(id, out var guid))
             {
                 Nzb nzb = null;
@@ -311,6 +337,11 @@ namespace NewzNabAggregator.Web.Controllers
         [Route("caps")]
         public async Task<IActionResult> Caps()
         {
+            if (!Authenticate())
+            {
+                return new UnauthorizedResult();
+            }
+
             var requestUri = new Uri($"{base.Request.Scheme}://{base.Request.Host}/{base.Request.PathBase}");
             var path = string.Empty;
             var queryString = new Dictionary<string, string>
