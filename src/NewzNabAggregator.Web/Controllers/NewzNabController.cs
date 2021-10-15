@@ -135,7 +135,7 @@ namespace NewzNabAggregator.Web.Controllers
                 {
                     var queryString = (from p in base.Request.QueryString.Value!.Remove(0, 1).Split("&")
                                        select p.Split("=")).ToDictionary((string[] p) => p.First(), (string[] p) => p.Last());
-                    queryString.TryGetValue("token", out token);
+                    queryString.TryGetValue("apikey", out token);
                 }
             }
             return token != null && _tokens.ContainsKey(token.Trim());
