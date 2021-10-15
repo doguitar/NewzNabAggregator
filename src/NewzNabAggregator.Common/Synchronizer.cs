@@ -27,9 +27,14 @@ namespace NewzNabAggregator.Common
             R result = default;
             await _executor.AddTaskAsync(async () =>
             {
-
-                result = await action(_context);
-                semaphore.Release();
+                try
+                {
+                    result = await action(_context);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
             });
             await semaphore.WaitAsync();
             return result;
@@ -39,8 +44,14 @@ namespace NewzNabAggregator.Common
             var semaphore = new SemaphoreSlim(0);
             await _executor.AddTaskAsync(async () =>
             {
-                await action(_context);
-                semaphore.Release();
+                try
+                {
+                    await action(_context);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
             });
             await semaphore.WaitAsync();
         }
@@ -50,8 +61,14 @@ namespace NewzNabAggregator.Common
             var semaphore = new SemaphoreSlim(0);
             _executor.AddTask(() =>
             {
-                action(_context);
-                semaphore.Release();
+                try
+                {
+                    action(_context);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
             });
             semaphore.Wait();
             return;
@@ -62,8 +79,14 @@ namespace NewzNabAggregator.Common
             R result = default;
             _executor.AddTask(() =>
             {
-                result = action(_context);
-                semaphore.Release();
+                try
+                {
+                    result = action(_context);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
             });
             semaphore.Wait();
             return result;
