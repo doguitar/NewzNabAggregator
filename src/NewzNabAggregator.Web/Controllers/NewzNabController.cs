@@ -141,17 +141,21 @@ namespace NewzNabAggregator.Web.Controllers
             return token != null && _tokens.ContainsKey(token.Trim());
         }
 
-        private async Task<List<Tuple<ClientInfo, HttpResponseMessage>>> QueryAllClients(string path, Dictionary<string, string> queryString, string client = null)
+        private async Task<List<Tuple<ClientInfo, HttpResponseMessage>>> QueryAllClients(Dictionary<string, string> queryString, string client = null)
         {
             var responses = new ConcurrentBag<Tuple<ClientInfo, HttpResponseMessage>>();
-            await Task.WhenAll(_clients.Where((ClientInfo c) => client == null || c.Name == client).Select((Func<ClientInfo, Task>)async delegate (ClientInfo clientInfo)
+#if DEBUG
+            foreach(var clientInfo in _clients)
+#else
+            await Task.WhenAll(_clients.Where((ClientInfo c) => client == null || c.Name == client).Select((Func<ClientInfo, Task>) async delegate (ClientInfo clientInfo)
+#endif
             {
                 var qs = new Dictionary<string, string>(queryString);
                 if (qs.ContainsKey("apikey"))
                 {
                     queryString["apikey"] = clientInfo.Token;
                 }
-                path = path + "?" + string.Join('&', queryString.Select((KeyValuePair<string, string> kvp) => kvp.Key + "=" + kvp.Value));
+                var path = "?" + string.Join('&', queryString.Where(kvp=>!string.IsNullOrWhiteSpace(kvp.Value)).Select((KeyValuePair<string, string> kvp) => kvp.Key + "=" + kvp.Value));
                 try
                 {
                     var start = DateTime.Now;
@@ -171,7 +175,12 @@ namespace NewzNabAggregator.Web.Controllers
                         Console.Write(e.ToString());
                     }
                 }
-            }));
+            }
+#if DEBUG
+
+#else
+            ));
+#endif
             return responses.ToList();
         }
 
@@ -207,7 +216,7 @@ namespace NewzNabAggregator.Web.Controllers
                     option = Option.JSON;
                 }
                 queryString["o"] = option.ToString().ToLowerInvariant();
-                foreach (var response in await QueryAllClients(path, queryString, client))
+                foreach (var response in await QueryAllClients(queryString, client))
                 {
                     if (response.Item2.IsSuccessStatusCode)
                     {
@@ -352,7 +361,7 @@ namespace NewzNabAggregator.Web.Controllers
                 option = Option.JSON;
             }
             queryString["o"] = option.ToString().ToLowerInvariant();
-            var responses = (await QueryAllClients(path, queryString)).Where(r => r.Item2.IsSuccessStatusCode);
+            var responses = (await QueryAllClients(queryString)).Where(r => r.Item2.IsSuccessStatusCode);
             var allcaps = new List<XElement>();
             foreach (var r in responses)
             {
