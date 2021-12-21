@@ -181,7 +181,7 @@ namespace NewzNabAggregator.Web.Controllers
         {
             Console.WriteLine($"{RequestId} Request {base.Request.Path}?{base.Request.QueryString}");
             var requestUri = new Uri($"{base.Request.Scheme}://{base.Request.Host}/{base.Request.PathBase}");
-            var results = new List<Tuple<ClientInfo, string>>();
+            var results = new List<Tuple<ClientInfo, string, string>>();
             if (base.Request.QueryString.HasValue)
             {
                 var path = base.Request.Path.Value!.Replace("/api", string.Empty);
@@ -211,7 +211,7 @@ namespace NewzNabAggregator.Web.Controllers
                 {
                     if (response.Item2.IsSuccessStatusCode)
                     {
-                        results.Add(new(response.Item1, await response.Item2.Content.ReadAsStringAsync()));
+                        results.Add(new(response.Item1, await response.Item2.Content.ReadAsStringAsync(), response.Item2.RequestMessage.RequestUri.AbsoluteUri));
                     }
                     base.HttpContext.Response.RegisterForDispose(response.Item2);
                 }
@@ -269,7 +269,7 @@ namespace NewzNabAggregator.Web.Controllers
                                 }
                                 catch (Exception)
                                 {
-                                    Console.WriteLine($"Failed to parse results at '{result.Item1.Name}': {Environment.NewLine}{result.Item2}");
+                                    Console.WriteLine($"Failed to parse results at '{result.Item1.Name}': {Environment.NewLine}{result.Item3}{Environment.NewLine}{result.Item2}");
                                 }
                             }
                             response2.Add(new XAttribute((XName?)"offset", offset), new XAttribute((XName?)"total", total));
