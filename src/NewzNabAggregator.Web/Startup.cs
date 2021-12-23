@@ -41,7 +41,8 @@ namespace NewzNabAggregator.Web
             var tokenDetails = from s in Configuration.GetSection("tokens").GetChildren()
                                select new
                                {
-                                   token = s.GetValue<string>("token")
+                                   token = s.GetValue<string>("token"),
+                                   name = s.GetValue<string>("name")
                                };
 
             services
@@ -51,7 +52,7 @@ namespace NewzNabAggregator.Web
                     Token = d.token,
                     Name = d.name
                 }).ToArray())
-                .AddSingleton(tokenDetails.Select(t => new TokenInfo { Token = t.token }).ToDictionary(t => t.Token, t => t))
+                .AddSingleton(tokenDetails.Select(t => new TokenInfo { Token = t.token, Name = t.name }).ToDictionary(t => t.Token, t => t))
                 .AddSingleton(newznabDetails.Select(d => new NewzNab(new Uri(d.url), d.token)).ToArray()).AddSingleton(new Synchronizer<NewzNabAggregator.Database.Database>(new NewzNabAggregator.Database.Database(dbPath)))
                 .AddSwaggerGen(delegate (SwaggerGenOptions c)
                 {

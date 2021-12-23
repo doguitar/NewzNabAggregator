@@ -136,7 +136,13 @@ namespace NewzNabAggregator.Web.Controllers
                     queryString.TryGetValue("apikey", out token);
                 }
             }
-            return token != null && _tokens.ContainsKey(token.Trim());
+            if (token != null && _tokens.TryGetValue(token.Trim(), out var info))
+            {
+                Log($"Authenticated {info.Name}");
+                return true;
+            }
+            Log($"Authentication Failed");
+            return false;
         }
 
         private async Task<List<Tuple<ClientInfo, HttpResponseMessage>>> QueryAllClients(Dictionary<string, string> queryString, string client = null)
