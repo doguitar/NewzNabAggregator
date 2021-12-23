@@ -189,7 +189,13 @@ namespace NewzNabAggregator.Web.Controllers
         public async Task<IActionResult> GetPassthrough(string client = null)
         {
             Console.WriteLine($"{RequestId} Request {base.Request.Path}?{base.Request.QueryString}");
-            var requestUri = new Uri($"{base.Request.Scheme}://{base.Request.Host}/{base.Request.PathBase}");
+            var scheme = Request.Scheme;
+            if (Request.Headers.TryGetValue("X-Forward-Proto", out var schemeObj))
+            {
+                scheme = schemeObj.ToString();
+            }
+
+            var requestUri = new Uri($"{scheme}://{base.Request.Host}/{base.Request.PathBase}");
             var results = new List<Tuple<ClientInfo, string, string>>();
             if (base.Request.QueryString.HasValue)
             {
