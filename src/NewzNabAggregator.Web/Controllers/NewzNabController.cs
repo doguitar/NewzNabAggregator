@@ -97,10 +97,8 @@ namespace NewzNabAggregator.Web.Controllers
         private readonly ClientInfo[] _clients;
         private readonly Dictionary<string, TokenInfo> _tokens;
 
-        private Guid RequestId
-        {
-            get;
-        } = Guid.NewGuid();
+        private static ushort RequestCounter;
+        private ushort RequestNumber = RequestCounter++;
 
 
         public NewzNabController(Synchronizer<NewzNabAggregator.Database.Database> db, NewzNabInfo[] newzNabs, Dictionary<string, TokenInfo> tokens)
@@ -161,18 +159,17 @@ namespace NewzNabAggregator.Web.Controllers
                     var start = DateTime.Now;
                     var response = await clientInfo.Client.GetAsync(path);
                     responses.Add(new(clientInfo, response));
-                    Console.WriteLine($"{RequestId} Indexer {clientInfo.Client.BaseAddress} responded in {(DateTime.Now - start).TotalSeconds} seconds");
+                    Log($"Indexer {clientInfo.Client.BaseAddress} responded in {(DateTime.Now - start).TotalSeconds} seconds");
                 }
                 catch (Exception e)
                 {
                     if (e.InnerException is TimeoutException)
                     {
-                        Console.WriteLine($"{RequestId} Indexer {clientInfo.Client.BaseAddress} timed out");
+                        Log($"Indexer {clientInfo.Client.BaseAddress} timed out");
                     }
                     else
                     {
-                        Console.WriteLine($"{RequestId} Indexer {clientInfo.Client.BaseAddress} threw an exception at url {path}");
-                        Console.Write(e.ToString());
+                        Log($"Indexer {clientInfo.Client.BaseAddress} threw an exception at url {path}{Environment.NewLine}{e.ToString()}");
                     }
                 }
             }
@@ -188,7 +185,7 @@ namespace NewzNabAggregator.Web.Controllers
         [Route("api/")]
         public async Task<IActionResult> GetPassthrough(string client = null)
         {
-            Console.WriteLine($"{RequestId} Request {base.Request.Path}?{base.Request.QueryString}");
+            Log($"Request {base.Request.Path}{base.Request.QueryString}");
             var scheme = Request.Scheme;
             if (Request.Headers.TryGetValue("X-Forward-Proto", out var schemeObj))
             {
@@ -244,6 +241,7 @@ namespace NewzNabAggregator.Web.Controllers
                             var response2 = new XElement(newznab + "response");
                             var channel = new XElement((XName?)"channel", new XElement((XName?)"title", "NzbAggregator"), new XElement((XName?)"description", "NzbAggregator"), response2);
                             var returnXml = new XDocument(new XElement((XName?)"rss", channel));
+                            var count = 0;
                             foreach (var result in results)
                             {
                                 try
@@ -279,15 +277,17 @@ namespace NewzNabAggregator.Web.Controllers
                                             url2 = (link.Value = new Uri(requestUri, $"/nzb/{nzb.id}").ToString());
                                             enclosure.Attribute((XName?)"url")!.Value = url2;
                                             channel.Add(item);
+                                            count++;
                                         }
                                     }
                                 }
                                 catch (Exception)
                                 {
-                                    Console.WriteLine($"Failed to parse results at '{result.Item1.Name}': {Environment.NewLine}{result.Item3}{Environment.NewLine}{result.Item2}");
+                                    Log($"Failed to parse results at '{result.Item1.Name}': {Environment.NewLine}{result.Item3}{Environment.NewLine}{result.Item2}");
                                 }
                             }
                             response2.Add(new XAttribute((XName?)"offset", offset), new XAttribute((XName?)"total", total));
+                            Log($"{count} Results");
                             return new ContentResult
                             {
                                 Content = returnXml.ToString(),
@@ -424,6 +424,11 @@ namespace NewzNabAggregator.Web.Controllers
                 ContentType = "text/xml",
                 StatusCode = 200
             };
+        }
+
+        private void Log(string message)
+        {
+            Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} - {RequestNumber:d5} - {message}");
         }
     }
 }

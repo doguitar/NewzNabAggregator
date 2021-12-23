@@ -3,6 +3,7 @@ using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
 
@@ -23,6 +24,10 @@ namespace NewzNabAggregator.Web
                     {
                         config.AddJsonFile(configFileOption.Value());
                     }
+                })
+                .ConfigureLogging((context, logging) =>
+                {
+                    logging.AddFilter((provider, category, logLevel) => provider.StartsWith("Microsoft.AspNetCore") && logLevel >= LogLevel.Warning);
                 })
                 .Build().Run();
         }
