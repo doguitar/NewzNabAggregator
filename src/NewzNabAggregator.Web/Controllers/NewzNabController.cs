@@ -193,7 +193,7 @@ namespace NewzNabAggregator.Web.Controllers
         {
             Log($"Request {base.Request.Path}{base.Request.QueryString}");
             var scheme = Request.Scheme;
-            if (Request.Headers.TryGetValue("X-Forward-Proto", out var schemeObj))
+            if (Request.Headers.TryGetValue("X-Forwarded-Proto", out var schemeObj))
             {
                 scheme = schemeObj.ToString();
             }
