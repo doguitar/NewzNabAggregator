@@ -231,7 +231,7 @@ namespace NewzNabAggregator.Web.Controllers
                     option = Option.JSON;
                 }
                 queryString["o"] = option.ToString().ToLowerInvariant();
-                if(Categories == null)
+                if (Categories == null)
                 {
                     await Caps();
                 }
@@ -294,15 +294,20 @@ namespace NewzNabAggregator.Web.Controllers
                                             enclosure.Attribute((XName?)"url")!.Value = url2;
 
                                             var category = item.Element("category");
-                                            var categoryId = item.Elements(newznab.GetName("attr"))
+                                            var categoryValue =
+                                                string.Join(" > ",
+                                                item.Elements(newznab.GetName("attr"))
                                                 .Where(attr => attr.Attribute("name").Value == "category")
                                                 .Select(attr => { uint.TryParse(attr.Attribute("value").Value, out var id); return id; })
-                                                .Max();
-
-                                            if (Categories.ContainsKey(categoryId))
+                                                .Where(Categories.ContainsKey)
+                                                .Order()
+                                                .Select(id => Categories[id])
+                                                );
+                                            if (!string.IsNullOrWhiteSpace(categoryValue))
                                             {
-                                                category.Value = Categories[categoryId];
+                                                category.Value = categoryValue;
                                             }
+
 
                                             channel.Add(item);
                                             count++;
