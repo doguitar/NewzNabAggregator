@@ -100,6 +100,7 @@ namespace NewzNabAggregator.Web.Controllers
         private static ushort RequestCounter;
         private ushort RequestNumber = RequestCounter++;
 
+        private static Dictionary<uint, string> Categories;
 
         public NewzNabController(Synchronizer<NewzNabAggregator.Database.Database> db, NewzNabInfo[] newzNabs, Dictionary<string, TokenInfo> tokens)
         {
@@ -127,6 +128,10 @@ namespace NewzNabAggregator.Web.Controllers
 
         private bool Authenticate(string token = null)
         {
+
+#if DEBUG
+            return true;
+#endif
             if (string.IsNullOrWhiteSpace(token))
             {
                 if (Request.QueryString.HasValue)
@@ -148,10 +153,11 @@ namespace NewzNabAggregator.Web.Controllers
         private async Task<List<Tuple<ClientInfo, HttpResponseMessage>>> QueryAllClients(Dictionary<string, string> queryString, string client = null)
         {
             var responses = new ConcurrentBag<Tuple<ClientInfo, HttpResponseMessage>>();
+            var clients = _clients.Where((ClientInfo c) => client == null || c.Name == client);
 #if DEBUG
-            foreach(var clientInfo in _clients)
+            foreach (var clientInfo in clients)
 #else
-            await Task.WhenAll(_clients.Where((ClientInfo c) => client == null || c.Name == client).Select((Func<ClientInfo, Task>) async delegate (ClientInfo clientInfo)
+            await Task.WhenAll(clients.Select((Func<ClientInfo, Task>) async delegate (ClientInfo clientInfo)
 #endif
             {
                 var qs = new Dictionary<string, string>(queryString);
@@ -159,7 +165,7 @@ namespace NewzNabAggregator.Web.Controllers
                 {
                     queryString["apikey"] = clientInfo.Token;
                 }
-                var path = "?" + string.Join('&', queryString.Where(kvp=>!string.IsNullOrWhiteSpace(kvp.Value)).Select((KeyValuePair<string, string> kvp) => kvp.Key + "=" + kvp.Value));
+                var path = "?" + string.Join('&', queryString.Where(kvp => !string.IsNullOrWhiteSpace(kvp.Value)).Select((KeyValuePair<string, string> kvp) => kvp.Key + "=" + kvp.Value));
                 try
                 {
                     var start = DateTime.Now;
@@ -225,6 +231,10 @@ namespace NewzNabAggregator.Web.Controllers
                     option = Option.JSON;
                 }
                 queryString["o"] = option.ToString().ToLowerInvariant();
+                if(Categories == null)
+                {
+                    await Caps();
+                }
                 foreach (var response in await QueryAllClients(queryString, client))
                 {
                     if (response.Item2.IsSuccessStatusCode)
@@ -282,6 +292,18 @@ namespace NewzNabAggregator.Web.Controllers
                                             nzb = _db.Synchronize((db) => db.SaveNzb(nzb));
                                             url2 = (link.Value = new Uri(requestUri, $"/nzb/{nzb.id}").ToString());
                                             enclosure.Attribute((XName?)"url")!.Value = url2;
+
+                                            var category = item.Element("category");
+                                            var categoryId = item.Elements(newznab.GetName("attr"))
+                                                .Where(attr => attr.Attribute("name").Value == "category")
+                                                .Select(attr => { uint.TryParse(attr.Attribute("value").Value, out var id); return id; })
+                                                .Max();
+
+                                            if (Categories.ContainsKey(categoryId))
+                                            {
+                                                category.Value = Categories[categoryId];
+                                            }
+
                                             channel.Add(item);
                                             count++;
                                         }
@@ -353,11 +375,19 @@ namespace NewzNabAggregator.Web.Controllers
         [Route("caps")]
         public async Task<IActionResult> Caps()
         {
+            return await Caps(null);
+        }
+
+        [HttpGet]
+        [Route("{client}/caps")]
+        public async Task<IActionResult> Caps(string client = null)
+        {
             if (!Authenticate())
             {
                 return new UnauthorizedResult();
             }
 
+            Categories = new Dictionary<uint, string>();
             var requestUri = new Uri($"{base.Request.Scheme}://{base.Request.Host}/{base.Request.PathBase}");
             var path = string.Empty;
             var queryString = new Dictionary<string, string>
@@ -373,7 +403,7 @@ namespace NewzNabAggregator.Web.Controllers
                 option = Option.JSON;
             }
             queryString["o"] = option.ToString().ToLowerInvariant();
-            var responses = (await QueryAllClients(queryString)).Where(r => r.Item2.IsSuccessStatusCode);
+            var responses = (await QueryAllClients(queryString, client)).Where(r => r.Item2.IsSuccessStatusCode);
             var allcaps = new List<XElement>();
             foreach (var r in responses)
             {
@@ -412,12 +442,26 @@ namespace NewzNabAggregator.Web.Controllers
                                  select g)
             {
                 var category = new XElement((XName?)"category", new XAttribute((XName?)"id", cats.Key), new XAttribute((XName?)"name", cats.First().Attribute((XName?)"name")!.Value));
+                if (uint.TryParse(category.Attribute("id").Value, out var categoryId))
+                {
+                    if (!Categories.ContainsKey(categoryId))
+                    {
+                        Categories.Add(categoryId, category.Attribute("name").Value);
+                    }
+                }
                 foreach (var subcats in from e in cats.Select((XElement c) => c.Elements("subcat")).SelectMany((IEnumerable<XElement> e) => e)
                                         group e by e.Attribute((XName?)"id")!.Value into g
                                         where g.Count() == cats.Count()
                                         select g)
                 {
                     var subcat = new XElement((XName?)"category", new XAttribute((XName?)"id", subcats.Key), new XAttribute((XName?)"name", subcats.First().Attribute((XName?)"name")!.Value));
+                    if (uint.TryParse(subcat.Attribute("id").Value, out var subcategoryId))
+                    {
+                        if (!Categories.ContainsKey(subcategoryId))
+                        {
+                            Categories.Add(subcategoryId, subcat.Attribute("name").Value);
+                        }
+                    }
                     category.Add(subcat);
                 }
                 categories.Add(category);

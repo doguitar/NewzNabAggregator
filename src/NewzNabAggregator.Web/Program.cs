@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.CommandLineUtils;
+using System.CommandLine;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
 using Microsoft.Extensions.Hosting;
@@ -13,17 +13,15 @@ namespace NewzNabAggregator.Web
     {
         public static void Main(string[] args)
         {
-            var cla = new CommandLineApplication(throwOnUnexpectedArg: true);
-            var configFileOption = cla.Option("--config <configuration_filename>", "File name of configuration", CommandOptionType.SingleValue);
-            cla.Execute(args);
+            var rootCommand = new RootCommand("");
+            var configOption = new Option<FileInfo>(name: "--config", description: "File name of configuration");
+            rootCommand.AddOption(configOption);
 
             CreateHostBuilder(args)
                 .ConfigureAppConfiguration((context, config) =>
                 {
-                    if (configFileOption.HasValue())
-                    {
-                        config.AddJsonFile(configFileOption.Value());
-                    }
+                    rootCommand.SetHandler(file => config.AddJsonFile(file.FullName), configOption);
+                    rootCommand.Invoke(args);
                 })
                 .ConfigureLogging((context, logging) =>
                 {
@@ -41,6 +39,12 @@ namespace NewzNabAggregator.Web
             var startupConfig = builder.Build();
             var baseDir = startupConfig.GetValue("baseDir", $"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}{Path.DirectorySeparatorChar}NewzNabAggregator{Path.DirectorySeparatorChar}");
             Environment.SetEnvironmentVariable("NNA_baseDir", baseDir);
+
+            if (!Directory.Exists(baseDir))
+            {
+                Directory.CreateDirectory(baseDir);
+            }
+
             builder = new ConfigurationBuilder().SetBasePath(baseDir).AddJsonFile("config.json", optional: true, reloadOnChange: false).AddEnvironmentVariables(delegate (EnvironmentVariablesConfigurationSource s)
             {
                 s.Prefix = "NNA_";

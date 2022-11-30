@@ -3,12 +3,13 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://10.10.1.50:5000",
+      "applicationUrl": "http://0.0.0.0:5000",
       "sslPort": 0
     }
   },
   "profiles": {
     "IIS Express": {
+      "applicationUrl": "http://0.0.0.0:5000",
       "commandName": "IISExpress",
       "launchBrowser": true,
       "environmentVariables": {
